@@ -1,5 +1,5 @@
 #!/bin/bash
-CONFIG_VERSION=3.1
+CONFIG_VERSION=3.2
 ######################
 #   USER VARIABLES   #
 ######################
@@ -8,9 +8,11 @@ CONFIG_VERSION=3.1
 
 ### NOTIFICATION SETTINGS ###
 
-# address where the output of the jobs will be emailed to.
-EMAIL_ADDRESS="youremailgoeshere"
-FROM_EMAIL_ADDRESS="fromemailgoeshere"
+# Address where the output will be emailed to.
+# If you do not want to receive emails and rely on other notification 
+# methods, leave these fields empty.
+EMAIL_ADDRESS="destination-email-goes-here"
+FROM_EMAIL_ADDRESS="sender-email-goes-here"
 
 # Use Healthchecks.io to report script errors. Set to 1 to enable.
 # Please note that every "WARNING" will be reported as failure.
@@ -77,6 +79,13 @@ SCRUB_DELAYED_RUN=0
 # allow to run a fix operation. 1 to enable, any other value to disable.
 PREHASH=1
 
+# Forces the operation of syncing a file with zero size that before was not. 
+# If SnapRAID detects a such condition, it stops proceeding unless you enable
+# this option. Useful when syncing system files which can genuinely get 
+# changed to zero.
+# Disabled by default, 1 to enable.
+FORCE_ZERO=0
+
 # Set if disk spindown should be performed. Depending on your system, this may
 # not work. 1 to enable, any other value to disable.
 # hd-idle is required and must be already configured.
@@ -86,11 +95,21 @@ SPINDOWN=0
 # other value to disable.
 SMART_LOG=1
 
-# Increase verbosity of the email output. If set to 1, TOUCH and DIFF outputs
-# will be kept in the email, producing a mostly unreadable email. Keep this
-# disabled for optimal results. You can always check TOUCH and DIFF outputs
-# using the TMP file. 1 to enable, any other value to disable.
+# Increase verbosity of the email output. NOT RECOMMENDED!
+# If set to 1, TOUCH and DIFF outputs will be kept in the email, producing 
+# a mostly unreadable email. You can always check TOUCH and DIFF outputs
+# using the TMP file or use the feature KEEP_LOG.
+# 1 to enable, any other value to disable.
 VERBOSITY=0
+
+# SnapRAID detailed output retention for each run.
+# Default behaviour is RETENTION_DAYS=0: every time your run SnapRAID, the 
+# output is saved to "/tmp" and is overridden during every run.
+# To enable retention, set RETENTION_DAYS to the days of output you want to 
+# keep in your home folder. Files will have timestamps. 
+# SNAPRAID_LOG_DIR can be changed to any folder you like.
+RETENTION_DAYS=0
+SNAPRAID_LOG_DIR="$HOME"
 
 # Run 'snapraid status' command to show array general information.
 # 1 to enable, any other value to disable.
@@ -132,7 +151,7 @@ DOCKER_DELAY=10
 
 # Hooks are shell commands that the scripts executes for you.
 # You can specify 'before_hook' to perform preparation steps before SnapRAID
-# actions and specify 'after_hook' to perform steps afterwards.
+# actions and 'after_hook' to perform steps afterwards.
 
 # Set to 1 to enable custom hooks
 CUSTOM_HOOK=0

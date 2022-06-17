@@ -1,5 +1,5 @@
 #!/bin/bash
-CONFIG_VERSION=3.2
+CONFIG_VERSION=3.2-Gigantuar
 ######################
 #   USER VARIABLES   #
 ######################
@@ -203,11 +203,16 @@ SNAPRAID_CONF_LINES=$(grep -E '^[^#;]' $SNAPRAID_CONF)
 IFS=$'\n'
 # Build an array of content files
 CONTENT_FILES=(
-$(echo "$SNAPRAID_CONF_LINES" | grep snapraid.content | cut -d ' ' -f2)
+  $(echo "$SNAPRAID_CONF_LINES" | grep snapraid.content | cut -d ' ' -f2)
 )
 
 # Build an array of parity all files...
 PARITY_FILES=(
   $(echo "$SNAPRAID_CONF_LINES" | grep -E '^([2-6z]-)*parity' | cut -d ' ' -f2- | tr ',' '\n')
+)
+
+# Build an array of all data disk mount points...
+DATA_DISKS=(
+  $(echo "$SNAPRAID_CONF_LINES" | grep '^data' | cut -d ' ' -f3)
 )
 unset IFS

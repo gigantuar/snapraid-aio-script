@@ -1,14 +1,16 @@
 #!/bin/bash
+set -uo pipefail
+
 ########################################################################
-#								       #
-#   Project page: https://github.com/auanasgheps/snapraid-aio-script   #
-#								       #
+#                                                                      #
+#    Project page: https://github.com/gigantuar/snapraid-aio-script    #
+#                                                                      #
 ########################################################################
 
 ######################
 #   CONFIG VARIABLES #
 ######################
-SNAPSCRIPTVERSION="3.2-DEV2"
+SNAPSCRIPTVERSION="3.2-Gigantuar"
 
 # Read SnapRAID version
 SNAPRAIDVERSION="$(snapraid -V | sed -e 's/snapraid v\(.*\)by.*/\1/')"
@@ -51,32 +53,42 @@ function main(){
 
   # Initialize notification 
   if [ "$HEALTHCHECKS" -eq 1 ] || [ "$TELEGRAM" -eq 1 ] || [ "$DISCORD" -eq 1 ]; then
-   # install curl if not found
-   if [ "$(dpkg-query -W -f='${Status}' curl 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
-    echo "**Curl has not been found and will be installed.**"
-    mklog "WARN: Curl has not been found and will be installed."
-    # super silent and secret install command
-    export DEBIAN_FRONTEND=noninteractive
-    apt-get install -qq -o=Dpkg::Use-Pty=0 curl;
-   fi
-   # invoke notification services if configured
+    # install curl if not found
+    if grep -q "bian" /etc/os-release; then
+      if [ "$(dpkg-query -W -f='${Status}' curl 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
+        echo "**Curl has not been found and will be installed.**"
+        mklog "WARN: Curl has not been found and will be installed."
+        # super silent and secret install command
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get install -qq -o=Dpkg::Use-Pty=0 curl;
+      fi
+    elif grep -q "arch" /etc/os-release; then
+      if ! $(pacman -Qi curl &>/dev/null); then
+        echo "**Curl has not been found and will be installed.**"
+        mklog "WARN: Curl has not been found and will be installed."
+        pacman -S --noconfirm --noprogressbar curl
+      fi
+    else
+      echo "**Could not detect your package manager. Manually install curl**"
+    fi
+    # invoke notification services if configured
     if [ "$HEALTHCHECKS" -eq 1 ]; then
-   echo "Healthchecks.io notification is enabled."
-   curl -fsS -m 5 --retry 3 -o /dev/null https://hc-ping.com/"$HEALTHCHECKS_ID"/start
-   fi
+      echo "Healthchecks.io notification is enabled."
+      curl -fsS -m 5 --retry 3 -o /dev/null https://hc-ping.com/"$HEALTHCHECKS_ID"/start
+    fi
     if [ "$TELEGRAM" -eq 1 ]; then
-   echo "Telegram notification is enabled."
-   curl -fsS -m 5 --retry 3 -o /dev/null -X POST \
-     -H 'Content-Type: application/json' \
-     -d '{"chat_id": "'$TELEGRAM_CHAT_ID'", "text": "SnapRAID Script Job started"}' \
-     https://api.telegram.org/bot"$TELEGRAM_TOKEN"/sendMessage
-	 fi
-   if [ "$DISCORD" -eq 1 ]; then
-     echo "Discord notification is enabled."
-     curl -fsS -m 5 --retry 3 -o /dev/null -X POST \
-     -H 'Content-Type: application/json' \
-     -d '{"content": "SnapRAID Script Job started"}' \
-     "$DISCORD_WEBHOOK_URL"
+      echo "Telegram notification is enabled."
+      curl -fsS -m 5 --retry 3 -o /dev/null -X POST \
+        -H 'Content-Type: application/json' \
+        -d '{"chat_id": "'$TELEGRAM_CHAT_ID'", "text": "SnapRAID Script Job started"}' \
+        https://api.telegram.org/bot"$TELEGRAM_TOKEN"/sendMessage
+    fi
+    if [ "$DISCORD" -eq 1 ]; then
+      echo "Discord notification is enabled."
+      curl -fsS -m 5 --retry 3 -o /dev/null -X POST \
+        -H 'Content-Type: application/json' \
+        -d '{"content": "SnapRAID Script Job started"}' \
+        "$DISCORD_WEBHOOK_URL"
     fi
   fi
 
@@ -88,10 +100,10 @@ function main(){
   # to syslog and exit
   if [ ! -f "$CONFIG_FILE" ]; then
     echo "Script configuration file not found! The script cannot be run! Please check and try again!"
-	mklog_noconfig "WARN: Script configuration file not found! The script cannot be run! Please check and try again!"
-	exit 1;
+    mklog_noconfig "WARN: Script configuration file not found! The script cannot be run! Please check and try again!"
+    exit 1;
   # check if the config file has the correct version
-  elif [ "$CONFIG_VERSION" != 3.2 ]; then
+  elif [ "$CONFIG_VERSION" != 3.2-Gigantuar ]; then
     echo "Please update your config file to the latest version. The current file is not compatible with this script!"
     mklog "WARN: Please update your config file to the latest version. The current file is not compatible with this script!"
     if [ "$EMAIL_ADDRESS" ]; then
@@ -100,19 +112,29 @@ function main(){
       trim_log < "$TMP_OUTPUT" | send_mail
       notify_warning
     fi
-	exit 1;
+  exit 1;
   else
     echo "Configuration file found."
     mklog "INFO: Script configuration file found."
   fi
 
   # install markdown if not found
-  if [ "$(dpkg-query -W -f='${Status}' python3-markdown 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
-    echo "**Markdown has not been found and will be installed.**"
-    mklog "WARN: Markdown has not been found and will be installed."
-    # super silent and secret install command
-    export DEBIAN_FRONTEND=noninteractive
-    apt-get install -qq -o=Dpkg::Use-Pty=0 python3-markdown;
+  if grep -q "bian" /etc/os-release; then
+    if [ "$(dpkg-query -W -f='${Status}' python3-markdown 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
+      echo "**Markdown has not been found and will be installed.**"
+      mklog "WARN: Markdown has not been found and will be installed."
+      # super silent and secret install command
+      export DEBIAN_FRONTEND=noninteractive
+      apt-get install -qq -o=Dpkg::Use-Pty=0 python3-markdown;
+    fi
+  elif grep -q "arch" /etc/os-release; then
+    if ! $(pacman -Qi python-markdown &>/dev/null); then
+      echo "**Markdown has not been found and will be installed.**"
+      mklog "WARN: Markdown has not been found and will be installed."
+      pacman -S --noconfirm --noprogressbar python-markdown
+    fi
+  else
+    echo "**Could not detect your package manager. Manually install python3-markdown**"
   fi
 
   # sanity check first to make sure we can access the content and parity files
@@ -121,7 +143,7 @@ function main(){
 
   # pause configured containers
   if [ "$MANAGE_SERVICES" -eq 1 ]; then
-   service_array_setup
+    service_array_setup
     if [ "$DOCKERALLOK" = YES ]; then
      echo
       if [ "$DOCKER_MODE" = 1 ]; then
@@ -166,13 +188,13 @@ function main(){
     # failed to get one or more of the count values, lets report to user and
     # exit with error code
     echo "**ERROR** - Failed to get one or more count values. Unable to continue."
-	mklog "WARN: Failed to get one or more count values. Unable to continue."
+    mklog "WARN: Failed to get one or more count values. Unable to continue."
     echo "Exiting script. [$(date)]"
     if [ "$EMAIL_ADDRESS" ]; then
       SUBJECT="[WARNING] - Unable to continue with SYNC/SCRUB job(s). Check DIFF job output. $EMAIL_SUBJECT_PREFIX"
-	    NOTIFY_OUTPUT="$SUBJECT"
+      NOTIFY_OUTPUT="$SUBJECT"
       trim_log < "$TMP_OUTPUT" | send_mail
-	  notify_warning
+      notify_warning
     fi
     exit 1;
   fi
@@ -205,12 +227,12 @@ function main(){
     mklog "INFO: SnapRAID SYNC Job started"
     echo "\`\`\`"
     if [ "$PREHASH" -eq 1 ] && [ "$FORCE_ZERO" -eq 1 ]; then
-	  $SNAPRAID_BIN sync -h --force-zero -q
-	elif [ "$PREHASH" -eq 1 ]; then 
+    $SNAPRAID_BIN sync -h --force-zero -q
+  elif [ "$PREHASH" -eq 1 ]; then 
       $SNAPRAID_BIN sync -h -q 
     elif [ "$FORCE_ZERO" -eq 1 ]; then  
-	  $SNAPRAID_BIN sync --force-zero -q
-	else
+    $SNAPRAID_BIN sync --force-zero -q
+  else
       $SNAPRAID_BIN sync -q 
     fi
     close_output_and_wait
@@ -234,14 +256,14 @@ function main(){
 
   # Moving onto scrub now. Check if user has enabled scrub
   echo "### SnapRAID SCRUB [$(date)]"
-	mklog "INFO: SnapRAID SCRUB Job started"
+  mklog "INFO: SnapRAID SCRUB Job started"
   if [ "$SCRUB_PERCENT" -gt 0 ]; then
     # YES, first let's check if delete threshold has been breached and we have
     # not forced a sync.
     if [ "$CHK_FAIL" -eq 1 ] && [ "$DO_SYNC" -eq 0 ]; then
       # YES, parity is out of sync so let's not run scrub job
       echo "Parity info is out of sync (deleted or changed files threshold has been breached)."
-	  echo "Not running SCRUB job. [$(date)]"
+      echo "Not running SCRUB job. [$(date)]"
       mklog "INFO: Parity info is out of sync (deleted or changed files threshold has been breached). Not running SCRUB job."
     else
       # NO, delete threshold has not been breached OR we forced a sync, but we
@@ -251,7 +273,7 @@ function main(){
         # Sync ran but did not complete successfully so lets not run scrub to
         # be safe
         echo "**WARNING** - check output of SYNC job. Could not detect marker."
-		echo "Not running SCRUB job. [$(date)]"
+        echo "Not running SCRUB job. [$(date)]"
         mklog "WARN: Check output of SYNC job. Could not detect marker. Not running SCRUB job."
       else
         # Everything ok - ready to run the scrub job!
@@ -262,7 +284,7 @@ function main(){
     fi
   else
     echo "Scrub job is not enabled. "
-	echo "Not running SCRUB job. [$(date)]"
+    echo "Not running SCRUB job. [$(date)]"
     mklog "INFO: Scrub job is not enabled. Not running SCRUB job."
   fi
 
@@ -301,32 +323,32 @@ function main(){
 
   # Spinning down disks (Method 2: hdparm - spins down all rotational devices)
   # if [ $SPINDOWN -eq 1 ]; then
-  # for DRIVE in `lsblk -d -o name | tail -n +2`
-  #   do
-  #     if [[ `smartctl -a /dev/$DRIVE | grep 'Rotation Rate' | grep rpm` ]]; then
-  #       hdparm -Y /dev/$DRIVE
-  #     fi
-  #   done
+  #   for DRIVE in `lsblk -d -o name | tail -n +2`
+  #     do
+  #       if [[ `smartctl -a /dev/$DRIVE | grep 'Rotation Rate' | grep rpm` ]]; then
+  #         hdparm -Y /dev/$DRIVE
+  #       fi
+  #     done
   # fi
 
 # Spin down disks (Method 3: hd-idle - spins down all rotational devices)
   if [ "$SPINDOWN" -eq 1 ]; then
-   for DRIVE in $(lsblk -d -o name | tail -n +2)
-     do
-       if [[ $(smartctl -a /dev/"$DRIVE" | grep 'Rotation Rate' | grep rpm) ]]; then
-         echo "spinning down /dev/$DRIVE"
-         hd-idle -t /dev/"$DRIVE"
-       fi
-     done
-   fi
+    for DRIVE in $(lsblk -d -o name | tail -n +2)
+      do
+        if [[ $(smartctl -a /dev/"$DRIVE" | grep 'Rotation Rate' | grep rpm) ]]; then
+          echo "spinning down /dev/$DRIVE"
+          hd-idle -t /dev/"$DRIVE"
+        fi
+      done
+  fi
 
   # Resume paused containers
   if [ "$SERVICES_STOPPED" -eq 1 ]; then
     echo
       if [ "$DOCKER_MODE" = 1 ]; then
         echo "### Resuming Containers [$(date)]";
-	else
-	echo "### Restarting Containers [$(date)]";
+  else
+  echo "### Restarting Containers [$(date)]";
       fi
     resume_services
   fi
@@ -355,8 +377,8 @@ function main(){
     if [ "$VERBOSITY" -eq 1 ]; then
       send_mail < "$TMP_OUTPUT"
     else
-	# or send a short mail
-     trim_log < "$TMP_OUTPUT" | send_mail
+      # or send a short mail
+      trim_log < "$TMP_OUTPUT" | send_mail
     fi
   fi
 
@@ -379,8 +401,8 @@ function sanity_check() {
   mklog "INFO: Checking if all parity and content files are present."
   for i in "${PARITY_FILES[@]}"; do
     if [ ! -e "$i" ]; then
-	echo "[$(date)] ERROR - Parity file ($i) not found!"
-	echo "ERROR - Parity file ($i) not found!" >> "$TMP_OUTPUT"
+  echo "[$(date)] ERROR - Parity file ($i) not found!"
+  echo "ERROR - Parity file ($i) not found!" >> "$TMP_OUTPUT"
     echo "**ERROR**: Please check the status of your disks! The script exits here due to missing file or disk."
     mklog "WARN: Parity file ($i) not found!"
     mklog "WARN: Please check the status of your disks! The script exits here due to missing file or disk."
@@ -389,7 +411,7 @@ function sanity_check() {
     SUBJECT="[WARNING] - Parity file ($i) not found! $EMAIL_SUBJECT_PREFIX"
     NOTIFY_OUTPUT="$SUBJECT"
     trim_log < "$TMP_OUTPUT" | send_mail
-	notify_warning
+  notify_warning
     exit 1;
   fi
   done
@@ -408,12 +430,35 @@ function sanity_check() {
       SUBJECT="[WARNING] - Content file ($i) not found! $EMAIL_SUBJECT_PREFIX"
       NOTIFY_OUTPUT="$SUBJECT"
       trim_log < "$TMP_OUTPUT" | send_mail
-	  notify_warning
+    notify_warning
     exit 1;
    fi
   done
   echo "All content files found."
   mklog "INFO: All content files found."
+
+  for i in "${DATA_DISKS[@]}"; do
+    if ! chk_mount "$i"; then
+      echo "[$(date)] ERROR - Data disk ($i) not found!"
+      echo "ERROR - Data disk ($i) not found!" >> "$TMP_OUTPUT"
+      echo "**ERROR**: Please check the status of your disks! The script exits here due to a unmounted disk."
+      mklog "WARN: Data disk ($i) not found!"
+      mklog "WARN: Please check the status of your disks! The script exits here due to a unmounted disk."
+
+      # Add a topline to email body
+      SUBJECT="[WARNING] - Data disk ($i) not found! $EMAIL_SUBJECT_PREFIX"
+      NOTIFY_OUTPUT="$SUBJECT"
+      trim_log < "$TMP_OUTPUT" | send_mail
+    notify_warning
+    exit 1;
+   fi
+  done
+  echo "All data disks mounted."
+  mklog "INFO: All data disks mounted."
+}
+
+function chk_mount() {
+  findmnt -T "$1" >/dev/null;
 }
 
 function get_counts() {
@@ -431,9 +476,8 @@ function sed_me(){
   # process and redirect output. We close stream because of the calls to new
   # wait function in between sed_me calls. If we do not do this we try to close
   # Processes which are not parents of the shell.
-  exec >& "$OUT" 2>& "$ERROR"
+  exec 1>& "$OUT" 2>& "$ERROR"
   sed -i "$1" "$2"
-
   output_to_file_screen
 }
 
@@ -448,14 +492,14 @@ function chk_del(){
     fi
   else
     if [ "$RETENTION_DAYS" -gt 0 ]; then 
-     echo "**WARNING** Deleted files ($DEL_COUNT) reached/exceeded threshold ($DEL_THRESHOLD)."
-     echo "For more information, please check the DIFF ouput saved in $SNAPRAID_LOG_DIR."
-     mklog "WARN: Deleted files ($DEL_COUNT) reached/exceeded threshold ($DEL_THRESHOLD)."
-     CHK_FAIL=1
+      echo "**WARNING** Deleted files ($DEL_COUNT) reached/exceeded threshold ($DEL_THRESHOLD)."
+      echo "For more information, please check the DIFF ouput saved in $SNAPRAID_LOG_DIR."
+      mklog "WARN: Deleted files ($DEL_COUNT) reached/exceeded threshold ($DEL_THRESHOLD)."
+      CHK_FAIL=1
     else
-     echo "**WARNING** Deleted files ($DEL_COUNT) reached/exceeded threshold ($DEL_THRESHOLD)."
-     mklog "WARN: Deleted files ($DEL_COUNT) reached/exceeded threshold ($DEL_THRESHOLD)."
-     CHK_FAIL=1
+      echo "**WARNING** Deleted files ($DEL_COUNT) reached/exceeded threshold ($DEL_THRESHOLD)."
+      mklog "WARN: Deleted files ($DEL_COUNT) reached/exceeded threshold ($DEL_THRESHOLD)."
+      CHK_FAIL=1
     fi
   fi
 }
@@ -471,14 +515,14 @@ function chk_updated(){
     fi
   else
     if [ "$RETENTION_DAYS" -gt 0 ]; then 
-     echo "**WARNING** Updated files ($UPDATE_COUNT) reached/exceeded threshold ($UP_THRESHOLD)."
-     echo "For more information, please check the DIFF ouput saved in $SNAPRAID_LOG_DIR."
-     mklog "WARN: Updated files ($UPDATE_COUNT) reached/exceeded threshold ($UP_THRESHOLD)."
-     CHK_FAIL=1
+      echo "**WARNING** Updated files ($UPDATE_COUNT) reached/exceeded threshold ($UP_THRESHOLD)."
+      echo "For more information, please check the DIFF ouput saved in $SNAPRAID_LOG_DIR."
+      mklog "WARN: Updated files ($UPDATE_COUNT) reached/exceeded threshold ($UP_THRESHOLD)."
+      CHK_FAIL=1
     else
-     echo "**WARNING** Updated files ($UPDATE_COUNT) reached/exceeded threshold ($UP_THRESHOLD)."
-     mklog "WARN: Updated files ($UPDATE_COUNT) reached/exceeded threshold ($UP_THRESHOLD)."
-     CHK_FAIL=1
+      echo "**WARNING** Updated files ($UPDATE_COUNT) reached/exceeded threshold ($UP_THRESHOLD)."
+      mklog "WARN: Updated files ($UPDATE_COUNT) reached/exceeded threshold ($UP_THRESHOLD)."
+      CHK_FAIL=1
     fi
   fi
 }
@@ -558,17 +602,17 @@ function chk_zero(){
 }
 
 function chk_scrub_settings(){
-	if [ "$SCRUB_DELAYED_RUN" -gt 0 ]; then
+  if [ "$SCRUB_DELAYED_RUN" -gt 0 ]; then
     echo "Delayed scrub is enabled."
     mklog "INFO: Delayed scrub is enabled.."
   fi
 
-	local scrub_count
+  local scrub_count
   scrub_count=$(sed '/^[0-9]*$/!d' "$SCRUB_COUNT_FILE" 2>/dev/null)
   # zero if file does not exist or did not contain a number
   : "${scrub_count:=0}"
 
-	if [ "$scrub_count" -ge "$SCRUB_DELAYED_RUN" ]; then
+  if [ "$scrub_count" -ge "$SCRUB_DELAYED_RUN" ]; then
     # Run a scrub job. if the warn count is zero it means the scrub was already
     # forced, do not output a dumb message and continue with the scrub job.
     if [ "$scrub_count" -eq 0 ]; then
@@ -583,7 +627,7 @@ function chk_scrub_settings(){
       echo
       run_scrub
     fi
-	else
+  else
     # NO, so let's increment the warning count and skip the scrub job
     ((scrub_count += 1))
     echo "$scrub_count" > "$SCRUB_COUNT_FILE"
@@ -594,7 +638,7 @@ function chk_scrub_settings(){
       echo "$((SCRUB_DELAYED_RUN - scrub_count)) runs until the next scrub. **NOT** proceeding with SCRUB job. [$(date)]"
       mklog "INFO: $((SCRUB_DELAYED_RUN - scrub_count)) runs until the next scrub. **NOT** proceeding with SCRUB job. [$(date)]"
     fi
-	fi
+  fi
 }
 
 function run_scrub(){
@@ -622,71 +666,71 @@ function run_scrub(){
 function service_array_setup() {
   # check if container names are set correctly
   if [ -z "$SERVICES" ] && [ -z "$DOCKER_HOST_SERVICES" ]; then
-   echo "Please configure Containers. Unable to manage containers."
-   ARRAY_VALIDATED=NO
+    echo "Please configure Containers. Unable to manage containers."
+    ARRAY_VALIDATED=NO
   else
-   echo "Docker containers management is enabled."
-   ARRAY_VALIDATED=YES
+    echo "Docker containers management is enabled."
+    ARRAY_VALIDATED=YES
   fi
 
   # check what docker mode is set
   if [ "$DOCKER_MODE" = 1 ]; then
-   DOCKER_CMD1=pause
-   DOCKER_CMD2=unpause
-   DOCKERCMD_VALIDATED=YES
+    DOCKER_CMD1=pause
+    DOCKER_CMD2=unpause
+    DOCKERCMD_VALIDATED=YES
   elif [ "$DOCKER_MODE" = 2 ]; then
-   DOCKER_CMD1=stop
-   DOCKER_CMD2=start
-   DOCKERCMD_VALIDATED=YES
+    DOCKER_CMD1=stop
+    DOCKER_CMD2=start
+    DOCKERCMD_VALIDATED=YES
   else
-   echo "Please check your command configuration. Unable to manage containers."
-   DOCKERCMD_VALIDATED=NO
+    echo "Please check your command configuration. Unable to manage containers."
+    DOCKERCMD_VALIDATED=NO
   fi
 
   # validate docker configuration
   if [ "$ARRAY_VALIDATED" = YES ] && [ "$DOCKERCMD_VALIDATED" = YES ]; then
-   DOCKERALLOK=YES
+    DOCKERALLOK=YES
   else
-   DOCKERALLOK=NO
+    DOCKERALLOK=NO
   fi
 }
 
 function pause_services(){
   if [ "$DOCKER_REMOTE" -eq 1 ]; then
-   for i in "${DOCKER_HOST_SERVICES[@]}"; do
-    # delete previous array/list (this is crucial!)
-    unset remote_service_array
-    # split sub-list if available
-    if [[ $i == *":"* ]]
-     then
-      # split host name from services
-      tmpArray=(${i//:/ })
-      REMOTE_HOST=${tmpArray[0]}
-      REMOTE_SERVICES=${tmpArray[1]}
-    fi
-    # make array from simple string
-    IFS=',' read -r -a remote_service_array <<<"$REMOTE_SERVICES"
-    # Loop over services
-    for j in "${remote_service_array[@]}"; do
-     if [ "$DOCKER_MODE" = 1 ]; then
-      echo "Pausing Container - ""${j^}";
-     else
-      echo "Stopping Container - ""${j^}";
-     fi
-      ssh "$DOCKER_USER"@"$REMOTE_HOST" docker "$DOCKER_CMD1" "$j"
-     sleep "$DOCKER_DELAY"
+    for i in "${DOCKER_HOST_SERVICES[@]}"; do
+      # delete previous array/list (this is crucial!)
+      unset remote_service_array
+      # split sub-list if available
+      if [[ $i == *":"* ]]
+        then
+        # split host name from services
+        tmpArray=(${i//:/ })
+        REMOTE_HOST=${tmpArray[0]}
+        REMOTE_SERVICES=${tmpArray[1]}
+      fi
+      # make array from simple string
+      IFS=',' read -r -a remote_service_array <<<"$REMOTE_SERVICES"
+      # Loop over services
+      for j in "${remote_service_array[@]}"; do
+        if [ "$DOCKER_MODE" = 1 ]; then
+          echo "Pausing Container - ""${j^}";
+        else
+          echo "Stopping Container - ""${j^}";
+        fi
+        ssh "$DOCKER_USER"@"$REMOTE_HOST" docker "$DOCKER_CMD1" "$j"
+        sleep "$DOCKER_DELAY"
+      done
     done
-   done
   else
-   IFS=' ' read -r -a service_array <<<"$SERVICES"
-   for i in "${service_array[@]}"; do
-    if [ "$DOCKER_MODE" = 1 ]; then
-     echo "Pausing Container - ""${i^}";
-    else
-     echo "Stopping Container - ""${i^}";
-    fi
-    docker "$DOCKER_CMD1" "$i"
-   done
+    IFS=' ' read -r -a service_array <<<"$SERVICES"
+    for i in "${service_array[@]}"; do
+      if [ "$DOCKER_MODE" = 1 ]; then
+        echo "Pausing Container - ""${i^}";
+      else
+        echo "Stopping Container - ""${i^}";
+      fi
+      docker "$DOCKER_CMD1" "$i"
+    done
   fi
   SERVICES_STOPPED=1
   unset IFS
@@ -694,50 +738,50 @@ function pause_services(){
 
 function resume_services(){
   if [ "$SERVICES_STOPPED" -eq 1 ]; then
-   if [ "$DOCKER_REMOTE" -eq 1 ]; then
+    if [ "$DOCKER_REMOTE" -eq 1 ]; then
     for i in "${DOCKER_HOST_SERVICES[@]}"; do
-     # delete previous array/list (this is crucial!)
-     unset remote_service_array
-     # split sub-list if available
-     if [[ $i == *":"* ]]
-      then
-       # split host name from services
-       tmpArray=(${i//:/ })
-       REMOTE_HOST=${tmpArray[0]}
-       REMOTE_SERVICES=${tmpArray[1]}
-     fi
-     # make array from simple string
-     IFS=',' read -r -a remote_service_array <<<"$REMOTE_SERVICES"
-     # Loop over services
-     for j in "${remote_service_array[@]}"; do
-      if [ "$DOCKER_MODE" = 1 ]; then
-       echo "Resuming Container - ""${j^}";
-      else
-       echo "Restarting Container - ""${j^}";
+      # delete previous array/list (this is crucial!)
+      unset remote_service_array
+      # split sub-list if available
+      if [[ $i == *":"* ]]
+        then
+        # split host name from services
+        tmpArray=(${i//:/ })
+        REMOTE_HOST=${tmpArray[0]}
+        REMOTE_SERVICES=${tmpArray[1]}
       fi
-      ssh "$DOCKER_USER"@"$REMOTE_HOST" docker "$DOCKER_CMD2" "$j"
-      sleep "$DOCKER_DELAY"
-     done
+      # make array from simple string
+      IFS=',' read -r -a remote_service_array <<<"$REMOTE_SERVICES"
+      # Loop over services
+      for j in "${remote_service_array[@]}"; do
+        if [ "$DOCKER_MODE" = 1 ]; then
+          echo "Resuming Container - ""${j^}";
+        else
+          echo "Restarting Container - ""${j^}";
+        fi
+        ssh "$DOCKER_USER"@"$REMOTE_HOST" docker "$DOCKER_CMD2" "$j"
+        sleep "$DOCKER_DELAY"
+      done
     done
-   else
+    else
     IFS=' ' read -r -a service_array <<<"$SERVICES"
     for i in "${service_array[@]}"; do
-     if [ "$DOCKER_MODE" = 1 ]; then
-      echo "Resuming Container - ""${i^}";
-     else
-      echo "Restarting Container - ""${i^}";
-     fi
+      if [ "$DOCKER_MODE" = 1 ]; then
+        echo "Resuming Container - ""${i^}";
+      else
+        echo "Restarting Container - ""${i^}";
+      fi
       docker "$DOCKER_CMD2" "$i"
     done
-   fi
-   SERVICES_STOPPED=0
-   unset IFS
+    fi
+    SERVICES_STOPPED=0
+    unset IFS
   fi
 }
 
 function clean_desc(){
   [[ $- == *i* ]] && exec &>/dev/tty
- }
+}
 
 function final_cleanup(){
   resume_services
@@ -771,62 +815,62 @@ function prepare_mail() {
       MSG="Sync forced with multiple violations - Deleted files ($DEL_COUNT) / ($DEL_THRESHOLD) and changed files ($UPDATE_COUNT) / ($UP_THRESHOLD)"
     fi
     SUBJECT="[WARNING] $MSG $EMAIL_SUBJECT_PREFIX"
-	NOTIFY_OUTPUT="$SUBJECT"
-	notify_warning
+    NOTIFY_OUTPUT="$SUBJECT"
+    notify_warning
   elif [ -z "${JOBS_DONE##*"SYNC"*}" ] && ! grep -qw "$SYNC_MARKER" "$TMP_OUTPUT"; then
     # Sync ran but did not complete successfully so lets warn the user
     SUBJECT="[WARNING] SYNC job ran but did not complete successfully $EMAIL_SUBJECT_PREFIX"
-	NOTIFY_OUTPUT="$SUBJECT"
-	notify_warning
+    NOTIFY_OUTPUT="$SUBJECT"
+    notify_warning
   elif [ -z "${JOBS_DONE##*"SCRUB"*}" ] && ! grep -qw "$SCRUB_MARKER" "$TMP_OUTPUT"; then
     # Scrub ran but did not complete successfully so lets warn the user
     SUBJECT="[WARNING] SCRUB job ran but did not complete successfully $EMAIL_SUBJECT_PREFIX"
-	NOTIFY_OUTPUT="$SUBJECT
-SUMMARY: Equal [$EQ_COUNT] - Added [$ADD_COUNT] - Deleted [$DEL_COUNT] - Moved [$MOVE_COUNT] - Copied [$COPY_COUNT] - Updated [$UPDATE_COUNT]"
-	notify_warning
+    NOTIFY_OUTPUT="$SUBJECT
+    SUMMARY: Equal [$EQ_COUNT] - Added [$ADD_COUNT] - Deleted [$DEL_COUNT] - Moved [$MOVE_COUNT] - Copied [$COPY_COUNT] - Updated [$UPDATE_COUNT]"
+    notify_warning
   else
     SUBJECT="[COMPLETED] $JOBS_DONE Jobs $EMAIL_SUBJECT_PREFIX"
-	NOTIFY_OUTPUT="$SUBJECT
-SUMMARY: Equal [$EQ_COUNT] - Added [$ADD_COUNT] - Deleted [$DEL_COUNT] - Moved [$MOVE_COUNT] - Copied [$COPY_COUNT] - Updated [$UPDATE_COUNT]"
-	notify_success
+    NOTIFY_OUTPUT="$SUBJECT
+    SUMMARY: Equal [$EQ_COUNT] - Added [$ADD_COUNT] - Deleted [$DEL_COUNT] - Moved [$MOVE_COUNT] - Copied [$COPY_COUNT] - Updated [$UPDATE_COUNT]"
+    notify_success
   fi
 }
 
 function notify_success(){
   if [ "$HEALTHCHECKS" -eq 1 ]; then
-   curl -fsS -m 5 --retry 3 -o /dev/null https://hc-ping.com/"$HEALTHCHECKS_ID"/0 --data-raw "$NOTIFY_OUTPUT"
+    curl -fsS -m 5 --retry 3 -o /dev/null https://hc-ping.com/"$HEALTHCHECKS_ID"/0 --data-raw "$NOTIFY_OUTPUT"
   fi
   if [ "$TELEGRAM" -eq 1 ]; then
-   curl -fsS -m 5 --retry 3 -o /dev/null -X POST \
-   -H 'Content-Type: application/json' \
-   -d '{"chat_id": "'"$TELEGRAM_CHAT_ID"'", "text": "'"$NOTIFY_OUTPUT"'"}' \
-   https://api.telegram.org/bot"$TELEGRAM_TOKEN"/sendMessage
+    curl -fsS -m 5 --retry 3 -o /dev/null -X POST \
+      -H 'Content-Type: application/json' \
+      -d '{"chat_id": "'"$TELEGRAM_CHAT_ID"'", "text": "'"$NOTIFY_OUTPUT"'"}' \
+      https://api.telegram.org/bot"$TELEGRAM_TOKEN"/sendMessage
   fi
   if [ "$DISCORD" -eq 1 ]; then
-   curl -fsS -m 5 --retry 3 -o /dev/null -X POST \
-   -H 'Content-Type: application/json' \
-   -d '{"content": "'"$SUBJECT"'"}' \
-   "$DISCORD_WEBHOOK_URL"
+    curl -fsS -m 5 --retry 3 -o /dev/null -X POST \
+      -H 'Content-Type: application/json' \
+      -d '{"content": "'"$SUBJECT"'"}' \
+      "$DISCORD_WEBHOOK_URL"
   fi
-  }
+}
 
 function notify_warning(){
   if [ "$HEALTHCHECKS" -eq 1 ]; then
-   curl -fsS -m 5 --retry 3 -o /dev/null https://hc-ping.com/"$HEALTHCHECKS_ID"/fail --data-raw "$NOTIFY_OUTPUT"
+    curl -fsS -m 5 --retry 3 -o /dev/null https://hc-ping.com/"$HEALTHCHECKS_ID"/fail --data-raw "$NOTIFY_OUTPUT"
   fi
   if [ "$TELEGRAM" -eq 1 ]; then
-   curl -fsS -m 5 --retry 3 -o /dev/null -X POST \
-   -H 'Content-Type: application/json' \
-   -d '{"chat_id": "'"$TELEGRAM_CHAT_ID"'", "text": "'"$NOTIFY_OUTPUT"'"}' \
-   https://api.telegram.org/bot"$TELEGRAM_TOKEN"/sendMessage
+    curl -fsS -m 5 --retry 3 -o /dev/null -X POST \
+      -H 'Content-Type: application/json' \
+      -d '{"chat_id": "'"$TELEGRAM_CHAT_ID"'", "text": "'"$NOTIFY_OUTPUT"'"}' \
+      https://api.telegram.org/bot"$TELEGRAM_TOKEN"/sendMessage
   fi
   if [ "$DISCORD" -eq 1 ]; then
-   curl -fsS -m 5 --retry 3 -o /dev/null -X POST \
-   -H 'Content-Type: application/json' \
-   -d '{"content": "'"$SUBJECT"'"}' \
-   "$DISCORD_WEBHOOK_URL"
+    curl -fsS -m 5 --retry 3 -o /dev/null -X POST \
+      -H 'Content-Type: application/json' \
+      -d '{"content": "'"$SUBJECT"'"}' \
+      "$DISCORD_WEBHOOK_URL"
   fi
-  }
+}
 
 # Trim the log file read from stdin.
 function trim_log(){
@@ -837,7 +881,7 @@ function trim_log(){
     /^### SnapRAID DIFF/,/^\DIFF finished/{
       /^### SnapRAID DIFF/!{/^DIFF finished/!d}
     }'
-  }
+}
 
 # Process and mail the email body read from stdin.
 function send_mail(){
@@ -853,8 +897,8 @@ function send_mail(){
   #    correctly.
 
   body=$(echo "$body" | sed '/^[[:space:]]*$/d; /^ -*$/d; s/$/  /' |
-      python3 -m markdown |
-      sed 's/<code>/<pre>/;s%</code>%</pre>%')
+    python3 -m markdown |
+    sed 's/<code>/<pre>/;s%</code>%</pre>%')
 
   if [ -x "$HOOK_NOTIFICATION" ]; then
     echo -e "Notification user script is set. Calling it now [$(date)]"
@@ -873,11 +917,11 @@ function send_mail(){
 # finish. Probably not the best way of 'fixing' this issue. Someone with more
 # knowledge can provide better insight.
 function close_output_and_wait(){
-  exec >& "$OUT" 2>& "$ERROR"
-  CHILD_PID=$(pgrep -P $$)
-  if [ -n "$CHILD_PID" ]; then
-    wait "$CHILD_PID"
-  fi
+  local pid
+  exec 1>& "$OUT" 2>& "$ERROR"
+  for pid in $(pgrep -P $$); do
+    wait "$pid"
+  done
 }
 
 # Redirects output to file and screen. Open a new tee process.

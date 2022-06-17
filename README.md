@@ -1,4 +1,12 @@
 # Snapraid AIO Script
+- Forked from [auanasgheps/snapraid-aio-script](https://github.com/auanasgheps/snapraid-aio-script)
+- Implements some changes from [cmcginty/snapraid-aio-script](https://github.com/cmcginty/snapraid-aio-script)
+- Adds support for verifying all data disks are mounted prior to executing SnapRAID
+- Adds support for Arch Linux package detection and installation
+- Cleaned up line spacing and indentation
+
+---
+
 The definitive all-in-one [SnapRAID](https://github.com/amadvance/snapraid) script. I hope you'll agree :).
 
 There are many SnapRAID scripts out there, but none has the features I want. So I made my own, inspired by existing solutions.

@@ -4,6 +4,7 @@
 - Adds support for verifying all data disks are mounted prior to executing SnapRAID
 - Adds support for Arch Linux package detection and installation
 - Cleaned up line spacing and indentation
+- Additional variable in script config to enable S-nail usage which will use the configured SNMP relay.
 
 ---
 

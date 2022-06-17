@@ -14,6 +14,11 @@ CONFIG_VERSION=3.2-Gigantuar
 EMAIL_ADDRESS="destination-email-goes-here"
 FROM_EMAIL_ADDRESS="sender-email-goes-here"
 
+# Enable if using S-nail to provide mailx
+# Define the SMTP mta string in SNAIL_SMTP
+SNAIL_ENABLED=0
+SNAIL_SMTP="smtp://smtp-server-address-here"
+
 # Use Healthchecks.io to report script errors. Set to 1 to enable.
 # Please note that every "WARNING" will be reported as failure.
 # When enabled, enter your Healthchecks UUID (not the full URL).

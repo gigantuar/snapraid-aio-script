@@ -1,0 +1,7 @@
+[Unit]
+Description=Execute SnapRAID AIO Script
+
+[Service]
+Type=oneshot
+# Update script location if not installed to /opt/snapraid
+ExecStart=/bin/bash /opt/snapraid/snapraid-aio-script.sh

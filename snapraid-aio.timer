@@ -1,0 +1,10 @@
+[Unit]
+Description=Execute SnapRAID AIO Script on a schedule
+
+[Timer]
+# Run at 3am local time
+OnCalendar=*-*-* 03:00:00
+AccuracySec=1us
+
+[Install]
+WantedBy=timers.target

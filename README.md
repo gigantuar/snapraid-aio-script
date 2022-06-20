@@ -5,6 +5,11 @@
 - Adds support for Arch Linux package detection and installation
 - Cleaned up line spacing and indentation
 - Additional variable in script config to enable S-nail usage which will use the configured SNMP relay.
+- Systemd service and timer templates
+  - Update snapraid-aio.service with your script install location and preferred execution time
+  - Copy snapraid-aio.service and snapraid-aio.timer to /etc/systemd/system/
+  - Execute `systemctl daemon-reload`
+  - Execute `systemctl enable snapraid-aio.timer`
 
 ---
 

@@ -9,7 +9,7 @@ CONFIG_VERSION=3.2-Gigantuar
 ### NOTIFICATION SETTINGS ###
 
 # Address where the output will be emailed to.
-# If you do not want to receive emails and rely on other notification 
+# If you do not want to receive emails and rely on other notification
 # methods, leave these fields empty.
 EMAIL_ADDRESS="destination-email-goes-here"
 FROM_EMAIL_ADDRESS="sender-email-goes-here"
@@ -34,17 +34,17 @@ TELEGRAM=0
 TELEGRAM_TOKEN="your-token-here"
 TELEGRAM_CHAT_ID="your-chat-id-here"
 
-# Use Discord to report script execution summary (not the whole report) 
-# Set 1 to enable. 
-# To get your Webhook URL go to the channel settings -> Integrations and 
+# Use Discord to report script execution summary (not the whole report)
+# Set 1 to enable.
+# To get your Webhook URL go to the channel settings -> Integrations and
 # create a web hook
 DISCORD=0
 DISCORD_WEBHOOK_URL="your-webhook-url"
 
 # Custom notification service
-# Set this to a script/service to be used instead of the default email 
-# notification. You may want to use a service not natively supported by this 
-# script or a mail service with custom formatting. 
+# Set this to a script/service to be used instead of the default email
+# notification. You may want to use a service not natively supported by this
+# script or a mail service with custom formatting.
 # If you don't want to use this option, don't make changes to this.
 # $CURRENT_DIR can be used to get the running directory of the script.
 # This script will pass the following parameters to HOOK_NOTIFICATION:
@@ -86,9 +86,9 @@ SCRUB_DELAYED_RUN=0
 # allow to run a fix operation. 1 to enable, any other value to disable.
 PREHASH=1
 
-# Forces the operation of syncing a file with zero size that before was not. 
+# Forces the operation of syncing a file with zero size that before was not.
 # If SnapRAID detects a such condition, it stops proceeding unless you enable
-# this option. Useful when syncing system files which can genuinely get 
+# this option. Useful when syncing system files which can genuinely get
 # changed to zero.
 # Disabled by default, 1 to enable.
 FORCE_ZERO=0
@@ -103,17 +103,17 @@ SPINDOWN=0
 SMART_LOG=1
 
 # Increase verbosity of the email output. NOT RECOMMENDED!
-# If set to 1, TOUCH and DIFF outputs will be kept in the email, producing 
+# If set to 1, TOUCH and DIFF outputs will be kept in the email, producing
 # a mostly unreadable email. You can always check TOUCH and DIFF outputs
 # using the TMP file or use the feature KEEP_LOG.
 # 1 to enable, any other value to disable.
 VERBOSITY=0
 
 # SnapRAID detailed output retention for each run.
-# Default behaviour is RETENTION_DAYS=0: every time your run SnapRAID, the 
+# Default behaviour is RETENTION_DAYS=0: every time your run SnapRAID, the
 # output is saved to "/tmp" and is overridden during every run.
-# To enable retention, set RETENTION_DAYS to the days of output you want to 
-# keep in your home folder. Files will have timestamps. 
+# To enable retention, set RETENTION_DAYS to the days of output you want to
+# keep in your home folder. Files will have timestamps.
 # SNAPRAID_LOG_DIR can be changed to any folder you like.
 RETENTION_DAYS=0
 SNAPRAID_LOG_DIR="$HOME"

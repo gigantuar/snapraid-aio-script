@@ -34,7 +34,7 @@ SCRUB_MARKER="SCRUB -"
 function main(){
   # create tmp file for output
   true > "$TMP_OUTPUT"
-    
+
   # Redirect all output to file and screen. Starts a tee process
   output_to_file_screen
 
@@ -51,7 +51,7 @@ function main(){
 
   echo "## Preprocessing"
 
-  # Initialize notification 
+  # Initialize notification
   if [ "$HEALTHCHECKS" -eq 1 ] || [ "$TELEGRAM" -eq 1 ] || [ "$DISCORD" -eq 1 ]; then
     # install curl if not found
     if grep -q "bian" /etc/os-release; then
@@ -92,7 +92,7 @@ function main(){
     fi
   fi
 
-  if [ "$RETENTION_DAYS" -gt 0 ]; then 
+  if [ "$RETENTION_DAYS" -gt 0 ]; then
   echo "SnapRAID output retention is enabled. Detailed logs will be kept in $SNAPRAID_LOG_DIR for $RETENTION_DAYS days."
   fi
 
@@ -228,12 +228,12 @@ function main(){
     echo "\`\`\`"
     if [ "$PREHASH" -eq 1 ] && [ "$FORCE_ZERO" -eq 1 ]; then
     $SNAPRAID_BIN sync -h --force-zero -q
-  elif [ "$PREHASH" -eq 1 ]; then 
-      $SNAPRAID_BIN sync -h -q 
-    elif [ "$FORCE_ZERO" -eq 1 ]; then  
+  elif [ "$PREHASH" -eq 1 ]; then
+      $SNAPRAID_BIN sync -h -q
+    elif [ "$FORCE_ZERO" -eq 1 ]; then
     $SNAPRAID_BIN sync --force-zero -q
   else
-      $SNAPRAID_BIN sync -q 
+      $SNAPRAID_BIN sync -q
     fi
     close_output_and_wait
     output_to_file_screen
@@ -382,10 +382,10 @@ function main(){
     fi
   fi
 
-  # Save and rotate logs if enabled 
-  if [ "$RETENTION_DAYS" -gt 0 ]; then 
+  # Save and rotate logs if enabled
+  if [ "$RETENTION_DAYS" -gt 0 ]; then
     find "$SNAPRAID_LOG_DIR"/SnapRAID-* -mtime +"$RETENTION_DAYS" -delete  # delete old logs
-    cp $TMP_OUTPUT "$SNAPRAID_LOG_DIR"/SnapRAID-"$(date +"%Y_%m_%d-%H%M")".out 
+    cp $TMP_OUTPUT "$SNAPRAID_LOG_DIR"/SnapRAID-"$(date +"%Y_%m_%d-%H%M")".out
   fi
 
   # exit with success, letting the trap handle cleanup of file descriptors
@@ -491,7 +491,7 @@ function chk_del(){
       DO_SYNC=1
     fi
   else
-    if [ "$RETENTION_DAYS" -gt 0 ]; then 
+    if [ "$RETENTION_DAYS" -gt 0 ]; then
       echo "**WARNING** Deleted files ($DEL_COUNT) reached/exceeded threshold ($DEL_THRESHOLD)."
       echo "For more information, please check the DIFF ouput saved in $SNAPRAID_LOG_DIR."
       mklog "WARN: Deleted files ($DEL_COUNT) reached/exceeded threshold ($DEL_THRESHOLD)."
@@ -514,7 +514,7 @@ function chk_updated(){
       DO_SYNC=1
     fi
   else
-    if [ "$RETENTION_DAYS" -gt 0 ]; then 
+    if [ "$RETENTION_DAYS" -gt 0 ]; then
       echo "**WARNING** Updated files ($UPDATE_COUNT) reached/exceeded threshold ($UP_THRESHOLD)."
       echo "For more information, please check the DIFF ouput saved in $SNAPRAID_LOG_DIR."
       mklog "WARN: Updated files ($UPDATE_COUNT) reached/exceeded threshold ($UP_THRESHOLD)."
@@ -571,10 +571,10 @@ function chk_sync_warn(){
     fi
   else
     # NO, so let's skip SYNC
-    if [ "$RETENTION_DAYS" -gt 0 ]; then 
+    if [ "$RETENTION_DAYS" -gt 0 ]; then
     echo "Forced sync is not enabled. **NOT** proceeding with SYNC job. [$(date)]"
     mklog "INFO: Forced sync is not enabled. **NOT** proceeding with SYNC job."
-    DO_SYNC=0    
+    DO_SYNC=0
     else
     echo "Forced sync is not enabled. Check $TMP_OUTPUT for details. **NOT** proceeding with SYNC job. [$(date)]"
     mklog "INFO: Forced sync is not enabled. Check $TMP_OUTPUT for details. **NOT** proceeding with SYNC job."

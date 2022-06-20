@@ -906,8 +906,13 @@ function send_mail(){
   else
     echo -e "Email address is set. Sending email report to **$EMAIL_ADDRESS** [$(date)]"
     if [ "$SNAIL_ENABLED" -eq 1 ]; then
-      $MAIL_BIN -M "text/html" -s "$SUBJECT" -S mta="$SNAIL_SMTP" -S from="$FROM_EMAIL_ADDRESS" "$EMAIL_ADDRESS" \
-        < <(echo "$body")
+      if [ "$SNAIL_SMTP" ]; then
+        $MAIL_BIN -M "text/html" -s "$SUBJECT" -S mta="$SNAIL_SMTP" -S from="$FROM_EMAIL_ADDRESS" "$EMAIL_ADDRESS" \
+          < <(echo "$body")
+      else
+        $MAIL_BIN -M "text/html" -s "$SUBJECT" -S from="$FROM_EMAIL_ADDRESS" "$EMAIL_ADDRESS" \
+          < <(echo "$body")
+      fi
     else
       $MAIL_BIN -a 'Content-Type: text/html' -s "$SUBJECT" -r "$FROM_EMAIL_ADDRESS" "$EMAIL_ADDRESS" \
         < <(echo "$body")

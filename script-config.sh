@@ -14,9 +14,11 @@ CONFIG_VERSION=3.2-Gigantuar
 EMAIL_ADDRESS="destination-email-goes-here"
 FROM_EMAIL_ADDRESS="sender-email-goes-here"
 
-# Enable if using S-nail to provide mailx
-# Define the SMTP mta string in SNAIL_SMTP
+# Enable if using S-nail to provide mailx for correct syntax
 SNAIL_ENABLED=0
+# Enable sending via SMTP Relay by defining the SMTP mta string in SNAIL_SMTP.
+# If you do not wish to utilize a relay leave this field blank. Mail will be
+# sent directly or honor the local mail.rc/.mailrc config.
 SNAIL_SMTP="smtp://smtp-server-address-here"
 
 # Use Healthchecks.io to report script errors. Set to 1 to enable.

@@ -10,6 +10,8 @@
   - Copy snapraid-aio.service and snapraid-aio.timer to /etc/systemd/system/
   - Execute `systemctl daemon-reload`
   - Execute `systemctl enable snapraid-aio.timer`
+- Additional config to enable/disable package checks and install attempts.
+- Support for notifications via [Pushover](https://pushover.net/)
 
 ---
 

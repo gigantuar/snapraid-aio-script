@@ -1,5 +1,5 @@
 #!/bin/bash
-CONFIG_VERSION=3.2-Gigantuar
+CONFIG_VERSION=3.3-Gigantuar
 ######################
 #   USER VARIABLES   #
 ######################
@@ -41,6 +41,34 @@ TELEGRAM_CHAT_ID="your-chat-id-here"
 DISCORD=0
 DISCORD_WEBHOOK_URL="your-webhook-url"
 
+# Use Pushover to report script execution summary (not the whole report)
+# Set 1 to enable.
+PUSHOVER=0
+# Create your own Pushover API application key for the script.
+# https://pushover.net/api#registration
+PO_API_KEY="application-api-token-here"
+PO_USER_KEY="user-key-here"
+# Optional device to target for alert. Leave blank for all devices.
+PO_DEVICE=
+# Desired priority for notifications. Leave empty to disable invidual notification.
+# https://pushover.net/api#priority
+# -2 - Lowest Priority - will not generate any notification
+# -1 - Low Priority - will not generate any sound or vibration
+#  0 - Normal Priority - trigger an alert according to the user's device settings
+#  1 - High Priority - bypass a user's quiet hours
+#  2 - Emergency Priority - repeat until acknowledged by the user
+PO_PRIORITY_JOBSTART=0
+PO_PRIORITY_SUCCESS=0
+PO_PRIORITY_WARNING=0
+# Desired sound alerts for notifications.
+# https://pushover.net/api#sounds
+# pushover = default
+# vibrate = vibrate only
+# none = silent
+PO_SOUND_JOBSTART=pushover
+PO_SOUND_SUCCESS=pushover
+PO_SOUND_WARNING=tugboat
+
 # Custom notification service
 # Set this to a script/service to be used instead of the default email
 # notification. You may want to use a service not natively supported by this
@@ -53,6 +81,10 @@ DISCORD_WEBHOOK_URL="your-webhook-url"
 HOOK_NOTIFICATION=""
 
 ### SCRIPT AND SNAPRAID SETTINGS ###
+
+# Check for necessary package availability and if necessary attempt to install
+# the packages automatically. 1 to enable, any other value to disable.
+PKG_CHECK=1
 
 # Set the threshold of deleted files to stop the sync job from running. Note
 # that depending on how active your filesystem is being used, a low number here

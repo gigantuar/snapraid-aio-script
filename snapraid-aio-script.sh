@@ -10,7 +10,7 @@ set -uo pipefail
 ######################
 #   CONFIG VARIABLES #
 ######################
-SNAPSCRIPTVERSION="3.2-Gigantuar"
+SNAPSCRIPTVERSION="3.3-Gigantuar"
 
 # Read SnapRAID version
 SNAPRAIDVERSION="$(snapraid -V | sed -e 's/snapraid v\(.*\)by.*/\1/')"
@@ -48,28 +48,29 @@ function main(){
   mklog "INFO: Running SnapRAID version $SNAPRAIDVERSION"
   mklog "INFO: SnapRAID Script version $SNAPSCRIPTVERSION"
 
-
   echo "## Preprocessing"
 
   # Initialize notification
-  if [ "$HEALTHCHECKS" -eq 1 ] || [ "$TELEGRAM" -eq 1 ] || [ "$DISCORD" -eq 1 ]; then
-    # install curl if not found
-    if grep -q "bian" /etc/os-release; then
-      if [ "$(dpkg-query -W -f='${Status}' curl 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
-        echo "**Curl has not been found and will be installed.**"
-        mklog "WARN: Curl has not been found and will be installed."
-        # super silent and secret install command
-        export DEBIAN_FRONTEND=noninteractive
-        apt-get install -qq -o=Dpkg::Use-Pty=0 curl;
+  if [ "$HEALTHCHECKS" -eq 1 ] || [ "$TELEGRAM" -eq 1 ] || [ "$DISCORD" -eq 1 ] || [ "$PUSHOVER" -eq 1 ]; then
+    if [ "$PKG_CHECK" -eq 1 ]; then
+      # install curl if not found
+      if grep -q "bian" /etc/os-release; then
+        if [ "$(dpkg-query -W -f='${Status}' curl 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
+          echo "**Curl has not been found and will be installed.**"
+          mklog "WARN: Curl has not been found and will be installed."
+          # super silent and secret install command
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get install -qq -o=Dpkg::Use-Pty=0 curl;
+        fi
+      elif grep -q "arch" /etc/os-release; then
+        if ! $(pacman -Qi curl &>/dev/null); then
+          echo "**Curl has not been found and will be installed.**"
+          mklog "WARN: Curl has not been found and will be installed."
+          pacman -S --noconfirm --noprogressbar curl
+        fi
+      else
+        echo "**Could not detect your package manager. Manually install curl**"
       fi
-    elif grep -q "arch" /etc/os-release; then
-      if ! $(pacman -Qi curl &>/dev/null); then
-        echo "**Curl has not been found and will be installed.**"
-        mklog "WARN: Curl has not been found and will be installed."
-        pacman -S --noconfirm --noprogressbar curl
-      fi
-    else
-      echo "**Could not detect your package manager. Manually install curl**"
     fi
     # invoke notification services if configured
     if [ "$HEALTHCHECKS" -eq 1 ]; then
@@ -80,15 +81,28 @@ function main(){
       echo "Telegram notification is enabled."
       curl -fsS -m 5 --retry 3 -o /dev/null -X POST \
         -H 'Content-Type: application/json' \
-        -d '{"chat_id": "'$TELEGRAM_CHAT_ID'", "text": "SnapRAID Script Job started"}' \
+        -d '{"chat_id": "'$TELEGRAM_CHAT_ID'", "text": "SnapRAID Script Job started on $(hostname)"}' \
         https://api.telegram.org/bot"$TELEGRAM_TOKEN"/sendMessage
     fi
     if [ "$DISCORD" -eq 1 ]; then
       echo "Discord notification is enabled."
       curl -fsS -m 5 --retry 3 -o /dev/null -X POST \
         -H 'Content-Type: application/json' \
-        -d '{"content": "SnapRAID Script Job started"}' \
+        -d '{"content": "SnapRAID Script Job started on $(hostname)"}' \
         "$DISCORD_WEBHOOK_URL"
+    fi
+    if [ "$PUSHOVER" -eq 1 ]; then
+      echo "Pushover notification is enabled."
+      if [ "$PO_PRIORITY_JOBSTART" ]; then
+        curl -fsS -m 5 --retry 3 -o /dev/null -X POST \
+          --form-string "token=$PO_API_KEY" \
+          --form-string "user=$PO_USER_KEY" \
+          --form-string "message=SnapRAID Script Job started on $(hostname)" \
+          ${PO_PRIORITY_JOBSTART:+ --form-string "priority=$PO_PRIORITY_JOBSTART"} \
+          ${PO_SOUND_JOBSTART:+ --form-string "sound=$PO_SOUND_JOBSTART"} \
+          ${PO_DEVICE:+ --form-string "device=$PO_DEVICE"} \
+          https://api.pushover.net/1/messages.json
+      fi
     fi
   fi
 
@@ -103,7 +117,7 @@ function main(){
     mklog_noconfig "WARN: Script configuration file not found! The script cannot be run! Please check and try again!"
     exit 1;
   # check if the config file has the correct version
-  elif [ "$CONFIG_VERSION" != 3.2-Gigantuar ]; then
+  elif [ "$CONFIG_VERSION" != 3.3-Gigantuar ]; then
     echo "Please update your config file to the latest version. The current file is not compatible with this script!"
     mklog "WARN: Please update your config file to the latest version. The current file is not compatible with this script!"
     if [ "$EMAIL_ADDRESS" ]; then
@@ -119,22 +133,24 @@ function main(){
   fi
 
   # install markdown if not found
-  if grep -q "bian" /etc/os-release; then
-    if [ "$(dpkg-query -W -f='${Status}' python3-markdown 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
-      echo "**Markdown has not been found and will be installed.**"
-      mklog "WARN: Markdown has not been found and will be installed."
-      # super silent and secret install command
-      export DEBIAN_FRONTEND=noninteractive
-      apt-get install -qq -o=Dpkg::Use-Pty=0 python3-markdown;
+  if [ "$PKG_CHECK" -eq 1 ]; then
+    if grep -q "bian" /etc/os-release; then
+      if [ "$(dpkg-query -W -f='${Status}' python3-markdown 2>/dev/null | grep -c "ok installed")" -eq 0 ]; then
+        echo "**Markdown has not been found and will be installed.**"
+        mklog "WARN: Markdown has not been found and will be installed."
+        # super silent and secret install command
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get install -qq -o=Dpkg::Use-Pty=0 python3-markdown;
+      fi
+    elif grep -q "arch" /etc/os-release; then
+      if ! $(pacman -Qi python-markdown &>/dev/null); then
+        echo "**Markdown has not been found and will be installed.**"
+        mklog "WARN: Markdown has not been found and will be installed."
+        pacman -S --noconfirm --noprogressbar python-markdown
+      fi
+    else
+      echo "**Could not detect your package manager. Manually install python3-markdown**"
     fi
-  elif grep -q "arch" /etc/os-release; then
-    if ! $(pacman -Qi python-markdown &>/dev/null); then
-      echo "**Markdown has not been found and will be installed.**"
-      mklog "WARN: Markdown has not been found and will be installed."
-      pacman -S --noconfirm --noprogressbar python-markdown
-    fi
-  else
-    echo "**Could not detect your package manager. Manually install python3-markdown**"
   fi
 
   # sanity check first to make sure we can access the content and parity files
@@ -458,7 +474,7 @@ function sanity_check() {
 }
 
 function chk_mount() {
-  findmnt -T "$1" >/dev/null;
+  findmnt -M "$1" >/dev/null;
 }
 
 function get_counts() {
@@ -852,6 +868,17 @@ function notify_success(){
       -d '{"content": "'"$SUBJECT"'"}' \
       "$DISCORD_WEBHOOK_URL"
   fi
+  if [ "$PUSHOVER" -eq 1 ] && [ "$PO_PRIORITY_SUCCESS" ]; then
+    curl -fsS -m 5 --retry 3 -o /dev/null -X POST \
+      --form-string "token=$PO_API_KEY" \
+      --form-string "user=$PO_USER_KEY" \
+      --form-string "message=$NOTIFY_OUTPUT" \
+      --form-string "title=$SUBJECT" \
+      ${PO_PRIORITY_SUCCESS:+ --form-string "priority=$PO_PRIORITY_SUCCESS"} \
+      ${PO_SOUND_SUCCESS:+ --form-string "sound=$PO_SOUND_SUCCESS"} \
+      ${PO_DEVICE:+ --form-string "device=$PO_DEVICE"} \
+      https://api.pushover.net/1/messages.json
+  fi
 }
 
 function notify_warning(){
@@ -869,6 +896,17 @@ function notify_warning(){
       -H 'Content-Type: application/json' \
       -d '{"content": "'"$SUBJECT"'"}' \
       "$DISCORD_WEBHOOK_URL"
+  fi
+  if [ "$PUSHOVER" -eq 1 ] && [ "$PO_PRIORITY_WARNING" ]; then
+    curl -fsS -m 5 --retry 3 -o /dev/null -X POST \
+      --form-string "token=$PO_API_KEY" \
+      --form-string "user=$PO_USER_KEY" \
+      --form-string "message=$NOTIFY_OUTPUT" \
+      --form-string "title=$SUBJECT" \
+      ${PO_PRIORITY_WARNING:+ --form-string "priority=$PO_PRIORITY_WARNING"} \
+      ${PO_SOUND_WARNING:+ --form-string "sound=$PO_SOUND_WARNING"} \
+      ${PO_DEVICE:+ --form-string "device=$PO_DEVICE"} \
+      https://api.pushover.net/1/messages.json
   fi
 }
 
@@ -906,13 +944,8 @@ function send_mail(){
   else
     echo -e "Email address is set. Sending email report to **$EMAIL_ADDRESS** [$(date)]"
     if [ "$SNAIL_ENABLED" -eq 1 ]; then
-      if [ "$SNAIL_SMTP" ]; then
-        $MAIL_BIN -M "text/html" -s "$SUBJECT" -S mta="$SNAIL_SMTP" -S from="$FROM_EMAIL_ADDRESS" "$EMAIL_ADDRESS" \
-          < <(echo "$body")
-      else
-        $MAIL_BIN -M "text/html" -s "$SUBJECT" -S from="$FROM_EMAIL_ADDRESS" "$EMAIL_ADDRESS" \
-          < <(echo "$body")
-      fi
+      $MAIL_BIN -M "text/html" -s "$SUBJECT" ${SNAIL_SMTP:+ -S mta="$SNAIL_SMTP"} -S from="$FROM_EMAIL_ADDRESS" "$EMAIL_ADDRESS" \
+        < <(echo "$body")
     else
       $MAIL_BIN -a 'Content-Type: text/html' -s "$SUBJECT" -r "$FROM_EMAIL_ADDRESS" "$EMAIL_ADDRESS" \
         < <(echo "$body")
